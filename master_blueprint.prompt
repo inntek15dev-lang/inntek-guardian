@@ -1,0 +1,30 @@
+# MASTER BLUEPRINT: ISO 27001 ISMS
+
+## Architecture Overview
+- **Pattern**: Modular Monolith / Hexagonal
+- **Stack**: React (Front) + Express (Back) + MySQL (DB)
+- **Monorepo**: Root package.json managing workspaces.
+
+## Data Schema (Sequelize)
+- **Document**: id(PK), name, category, status(Enum), responsible, deadline, mandatory(Bool).
+- **Control**: id(PK), controlId, name, category(Enum), status(Enum), justification, evidence.
+- **Audit**: id(PK), type, date, status(Enum), auditor, findings.
+- **NonConformity**: id(PK), type(Enum), description, control, status(Enum), deadline.
+
+## Privilegios Engine (RBAC)
+- **Models**: Role, Permission, User, RolePermissions (Through).
+- **Middleware**: `checkPermission(resource, action)`
+- **Standard Roles**: `admin`, `auditor`, `editor`, `viewer`.
+
+## UI Design Tokens
+- **Theme**: Premium Blue / Slate
+- **Layout**: Sidebar Navigation + Gradient Header
+- **KPIs**: Progress %, Docs count, Controls coverage, Open NCs.
+
+## API Specification
+- Base: `/api`
+- Docs: `/api/documents` [GET, POST, PUT, DELETE]
+- Controls: `/api/controls` [GET, POST, PUT]
+- Audits: `/api/audits` [GET, POST, PUT]
+- NCs: `/api/nonconformities` [GET, POST, PUT, DELETE]
+- Documentation: `/api-docs` (Swagger)

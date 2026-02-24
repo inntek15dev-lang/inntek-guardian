@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ISO 27001 - Sistema de Gestión de Certificación</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-blue-600 to-blue-800 text-white shadow-lg">
+        <div class="container mx-auto px-6 py-4">
+            <h1 class="text-3xl font-bold">🔐 ISO 27001:2022 - Sistema de Gestión ISMS</h1>
+            <p class="text-blue-100 mt-1">Control Integral de Certificación</p>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="bg-white shadow-md border-b">
+        <div class="container mx-auto px-6">
+            <div class="flex space-x-1">
+                <button onclick="showTab('dashboard')" class="tab-btn active px-6 py-4 font-semibold">📊 Dashboard</button>
+                <button onclick="showTab('docs')" class="tab-btn px-6 py-4 font-semibold">📄 Documentos</button>
+                <button onclick="showTab('controls')" class="tab-btn px-6 py-4 font-semibold">🔐 Controles</button>
+                <button onclick="showTab('audits')" class="tab-btn px-6 py-4 font-semibold">✓ Auditorías</button>
+                <button onclick="showTab('nc')" class="tab-btn px-6 py-4 font-semibold">⚠ No Conformidades</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto px-6 py-8">
+        <!-- DASHBOARD -->
+        <div id="dashboard" class="tab-content">
+            <!-- KPIs -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
+                    <p class="text-gray-500 text-sm font-medium">Progreso General</p>
+                    <p class="text-3xl font-bold mt-2" id="kpi-progress">0%</p>
+                    <div class="mt-4 bg-gray-200 rounded-full h-2">
+                        <div id="kpi-progress-bar" class="bg-blue-600 h-2 rounded-full transition-all" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
+                    <p class="text-gray-500 text-sm font-medium">Documentos</p>
+                    <p class="text-3xl font-bold mt-2"><span id="kpi-docs">0</span>/25</p>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6 border-l-4 border-purple-500">
+                    <p class="text-gray-500 text-sm font-medium">Controles</p>
+                    <p class="text-3xl font-bold mt-2"><span id="kpi-controls">0</span>/93</p>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6 border-l-4 border-red-500">
+                    <p class="text-gray-500 text-sm font-medium">NCs Abiertas</p>
+                    <p class="text-3xl font-bold mt-2" id="kpi-nc">0</p>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold mb-4">Progreso por Categoría</h3>
+                    <canvas id="chartCategory"></canvas>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold mb-4">Estado de Controles</h3>
+                    <canvas id="chartControls"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- DOCUMENTOS -->
+        <div id="docs" class="tab-content hidden">
+            <div class="mb-6 flex justify-between items-center">
+                <h2 class="text-2xl font-bold">Documentación Obligatoria ISO 27001</h2>
+                <button onclick="addDoc()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">+ Agregar</button>
+            </div>
+
+            <!-- Filters -->
+            <div class="bg-white rounded-lg shadow p-4 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <select id="filterDocCat" onchange="renderDocs()" class="border rounded px-4 py-2">
+                        <option value="">Todas las Categorías</option>
+                        <option value="Cláusula 4">Cláusula 4</option>
+                        <option value="Cláusula 5">Cláusula 5</option>
+                        <option value="Cláusula 6">Cláusula 6</option>
+                        <option value="Cláusula 7">Cláusula 7</option>
+                        <option value="Cláusula 8">Cláusula 8</option>
+                        <option value="Cláusula 9">Cláusula 9</option>
+                        <option value="Cláusula 10">Cláusula 10</option>
+                    </select>
+                    <select id="filterDocStatus" onchange="renderDocs()" class="border rounded px-4 py-2">
+                        <option value="">Todos los Estados</option>
+                        <option value="Pendiente">Pendiente</option>
+                        <option value="En Progreso">En Progreso</option>
+                        <option value="Revisión">Revisión</option>
+                        <option value="Aprobado">Aprobado</option>
+                        <option value="Implementado">Implementado</option>
+                    </select>
+                    <input type="text" id="filterDocSearch" onkeyup="renderDocs()" placeholder="Buscar..." class="border rounded px-4 py-2">
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <table class="w-full">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Documento</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Categoría</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Estado</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Responsable</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Fecha Límite</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="docsTable"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- CONTROLES -->
+        <div id="controls" class="tab-content hidden">
+            <div class="mb-6">
+                <h2 class="text-2xl font-bold">Controles Annex A - ISO 27001:2022</h2>
+                <p class="text-gray-600 mt-2">93 controles en 4 categorías principales</p>
+            </div>
+
+            <!-- Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow p-6 border-t-4 border-blue-500">
+                    <h3 class="font-semibold">Organizacionales (A.5)</h3>
+                    <p class="text-3xl font-bold text-blue-600 mt-2" id="stat-org">0/37</p>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6 border-t-4 border-green-500">
+                    <h3 class="font-semibold">Personas (A.6)</h3>
+                    <p class="text-3xl font-bold text-green-600 mt-2" id="stat-people">0/8</p>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6 border-t-4 border-purple-500">
+                    <h3 class="font-semibold">Físicos (A.7)</h3>
+                    <p class="text-3xl font-bold text-purple-600 mt-2" id="stat-physical">0/14</p>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6 border-t-4 border-orange-500">
+                    <h3 class="font-semibold">Tecnológicos (A.8)</h3>
+                    <p class="text-3xl font-bold text-orange-600 mt-2" id="stat-tech">0/34</p>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="bg-white rounded-lg shadow p-4 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <select id="filterCtrlCat" onchange="renderControls()" class="border rounded px-4 py-2">
+                        <option value="">Todas las Categorías</option>
+                        <option value="Organizacional">Organizacional (A.5)</option>
+                        <option value="Personas">Personas (A.6)</option>
+                        <option value="Físico">Físico (A.7)</option>
+                        <option value="Tecnológico">Tecnológico (A.8)</option>
+                    </select>
+                    <select id="filterCtrlStatus" onchange="renderControls()" class="border rounded px-4 py-2">
+                        <option value="">Todos los Estados</option>
+                        <option value="No Implementado">No Implementado</option>
+                        <option value="En Implementación">En Implementación</option>
+                        <option value="Implementado">Implementado</option>
+                        <option value="Verificado">Verificado</option>
+                        <option value="No Aplicable">No Aplicable</option>
+                    </select>
+                    <input type="text" id="filterCtrlSearch" onkeyup="renderControls()" placeholder="Buscar..." class="border rounded px-4 py-2">
+                </div>
+            </div>
+
+            <!-- Controls List -->
+            <div id="controlsList" class="space-y-4"></div>
+        </div>
+
+        <!-- AUDITORÍAS -->
+        <div id="audits" class="tab-content hidden">
+            <div class="mb-6 flex justify-between items-center">
+                <h2 class="text-2xl font-bold">Gestión de Auditorías</h2>
+                <button onclick="addAudit()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">+ Programar</button>
+            </div>
+
+            <!-- Timeline -->
+            <div class="bg-white rounded-lg shadow p-6 mb-6">
+                <h3 class="text-lg font-semibold mb-4">Timeline de Certificación</h3>
+                <div class="space-y-6" id="auditTimeline"></div>
+            </div>
+
+            <!-- Table -->
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <table class="w-full">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Tipo</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Fecha</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Estado</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Auditor</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Hallazgos</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="auditsTable"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- NO CONFORMIDADES -->
+        <div id="nc" class="tab-content hidden">
+            <div class="mb-6 flex justify-between items-center">
+                <h2 class="text-2xl font-bold">Gestión de No Conformidades</h2>
+                <button onclick="addNC()" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">+ Registrar NC</button>
+            </div>
+
+            <!-- Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <p class="text-gray-500 text-sm font-medium">NCs Mayores</p>
+                    <p class="text-3xl font-bold text-red-600 mt-2" id="stat-nc-major">0</p>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <p class="text-gray-500 text-sm font-medium">NCs Menores</p>
+                    <p class="text-3xl font-bold text-yellow-600 mt-2" id="stat-nc-minor">0</p>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <p class="text-gray-500 text-sm font-medium">Mejoras</p>
+                    <p class="text-3xl font-bold text-blue-600 mt-2" id="stat-nc-improve">0</p>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <table class="w-full">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">ID</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Tipo</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Descripción</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Control</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Estado</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Plazo</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ncTable"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data Store
+        const DATA = {
+            documents: [],
+            controls: [],
+            audits: [],
+            nonconformities: []
+        };
+
+        // Initialize
+        function init() {
+            loadData();
+            if (DATA.documents.length === 0) initializeData();
+            renderAll();
+        }
+
+        function initializeData() {
+            // Documents
+            DATA.documents = [
+                {id: 1, name: "Alcance del SGSI", category: "Cláusula 4", subcategory: "4.3", status: "Pendiente", responsible: "", deadline: "", mandatory: true},
+                {id: 2, name: "Contexto de la Organización", category: "Cláusula 4", subcategory: "4.1", status: "Pendiente", responsible: "", deadline: "", mandatory: true},
+                {id: 3, name: "Partes Interesadas", category: "Cláusula 4", subcategory: "4.2", status: "Pendiente", responsible: "", deadline: "", mandatory: true},
+                {id: 4, name: "Política de Seguridad", category: "Cláusula 5", subcategory: "5.2", status: "Pendiente", responsible: "", deadline: "", mandatory: true},
+                {id: 5, name: "Roles y Responsabilidades", category: "Cláusula 5", subcategory: "5.3", status: "Pendiente", responsible: "", deadline: "", mandatory: true},
+                {id: 6, name: "Evaluación de Riesgos", category: "Cláusula 6", subcategory: "6.1.2", status: "Pendiente", responsible: "", deadline: "", mandatory: true},
+                {id: 7, name: "Plan de Tratamiento de Riesgos", category: "Cláusula 6", subcategory: "6.1.3", status: "Pendiente", responsible: "", deadline: "", mandatory: true},
+                {id: 8, name: "Declaración de Aplicabilidad (SoA)", category: "Cláusula 6", subcategory: "6.1.3", status: "Pendiente", responsible: "", deadline: "", mandatory: true},
+                {id: 9, name: "Objetivos de Seguridad", category: "Cláusula 6", subcategory: "6.2", status: "Pendiente", responsible: "", deadline: "", mandatory: true},
+                {id: 10, name: "Competencias del Personal", category: "Cláusula 7", subcategory: "7.2", status: "Pendiente", responsible: "", deadline: "", mandatory: true},
+                {id: 11, name: "Concienciación en Seguridad", category: "Cláusula 7", subcategory: "7.3", status: "Pendiente", responsible: "", deadline: "", mandatory: true},
+                {id: 12, name: "Control de Documentos", category: "Cláusula 7", subcategory: "7.5", status: "Pendiente", responsible: "", deadline: "", mandatory: true},
+                {id: 13, name: "Planificación Operacional", category: "Cláusula 8", subcategory: "8.1", status: "Pendiente", responsible: "", deadline: "", mandatory: true},
+                {id: 14, name: "Programa de Auditoría Interna", category: "Cláusula 9", subcategory: "9.2", status: "Pendiente", responsible: "", deadline: "", mandatory: true},
+                {id: 15, name: "Resultados Auditorías Internas", category: "Cláusula 9", subcategory: "9.2", status: "Pendiente", responsible: "", deadline: "", mandatory: true},
+                {id: 16, name: "Actas Revisión Dirección", category: "Cláusula 9", subcategory: "9.3", status: "Pendiente", responsible: "", deadline: "", mandatory: true},
+                {id: 17, name: "Resultados Monitoreo", category: "Cláusula 9", subcategory: "9.1", status: "Pendiente", responsible: "", deadline: "", mandatory: true},
+                {id: 18, name: "Registro No Conformidades", category: "Cláusula 10", subcategory: "10.1", status: "Pendiente", responsible: "", deadline: "", mandatory: true},
+                {id: 19, name: "Acciones Correctivas", category: "Cláusula 10", subcategory: "10.1", status: "Pendiente", responsible: "", deadline: "", mandatory: true},
+                {id: 20, name: "Mejora Continua", category: "Cláusula 10", subcategory: "10.2", status: "Pendiente", responsible: "", deadline: "", mandatory: true},
+                {id: 21, name: "Inventario de Activos", category: "Cláusula 8", subcategory: "Soporte", status: "Pendiente", responsible: "", deadline: "", mandatory: false},
+                {id: 22, name: "Política Control Acceso", category: "Cláusula 8", subcategory: "Soporte", status: "Pendiente", responsible: "", deadline: "", mandatory: false},
+                {id: 23, name: "Plan Continuidad Negocio", category: "Cláusula 8", subcategory: "Soporte", status: "Pendiente", responsible: "", deadline: "", mandatory: false},
+                {id: 24, name: "Plan Respuesta Incidentes", category: "Cláusula 8", subcategory: "Soporte", status: "Pendiente", responsible: "", deadline: "", mandatory: false},
+                {id: 25, name: "Política Uso Aceptable", category: "Cláusula 8", subcategory: "Soporte", status: "Pendiente", responsible: "", deadline: "", mandatory: false}
+            ];
+
+            // Controls (simplified - showing key ones)
+            const controlTemplates = {
+                "Organizacional": [
+                    "A.5.1 - Políticas de seguridad",
+                    "A.5.2 - Roles y responsabilidades",
+                    "A.5.3 - Segregación de funciones",
+                    "A.5.9 - Inventario de activos",
+                    "A.5.12 - Clasificación información",
+                    "A.5.15 - Control de acceso",
+                    "A.5.19 - Seguridad con proveedores",
+                    "A.5.24 - Gestión de incidentes",
+                    "A.5.29 - Continuidad del negocio",
+                    "A.5.34 - Protección de datos personales"
+                ],
+                "Personas": [
+                    "A.6.1 - Selección personal",
+                    "A.6.2 - Términos empleo",
+                    "A.6.3 - Concienciación seguridad",
+                    "A.6.7 - Trabajo remoto",
+                    "A.6.8 - Reporte de eventos"
+                ],
+                "Físico": [
+                    "A.7.1 - Perímetros físicos",
+                    "A.7.2 - Entrada física",
+                    "A.7.4 - Monitoreo físico",
+                    "A.7.7 - Escritorio limpio",
+                    "A.7.10 - Medios almacenamiento"
+                ],
+                "Tecnológico": [
+                    "A.8.1 - Dispositivos usuario",
+                    "A.8.2 - Acceso privilegiado",
+                    "A.8.5 - Autenticación segura",
+                    "A.8.7 - Protección malware",
+                    "A.8.8 - Gestión vulnerabilidades",
+                    "A.8.13 - Respaldo información",
+                    "A.8.15 - Logging",
+                    "A.8.20 - Seguridad redes",
+                    "A.8.24 - Uso criptografía",
+                    "A.8.25 - Desarrollo seguro"
+                ]
+            };
+
+            let id = 1;
+            for (const [cat, items] of Object.entries(controlTemplates)) {
+                items.forEach(name => {
+                    DATA.controls.push({
+                        id: `CTRL-${String(id++).padStart(3, '0')}`,
+                        controlId: name.split(' - ')[0],
+                        name: name,
+                        category: cat,
+                        status: "No Implementado",
+                        justification: "",
+                        evidence: ""
+                    });
+                });
+            }
+
+            // Audits
+            DATA.audits = [
+                {id: 1, type: "Gap Analysis", date: "2026-02-15", status: "Completada", auditor: "", findings: 0},
+                {id: 2, type: "Auditoría Interna", date: "2026-05-01", status: "Programada", auditor: "", findings: 0},
+                {id: 3, type: "Stage 1", date: "2026-06-15", status: "Pendiente", auditor: "", findings: 0},
+                {id: 4, type: "Stage 2", date: "2026-08-01", status: "Pendiente", auditor: "", findings: 0}
+            ];
+
+            saveData();
+        }
+
+        // Data Persistence
+        function saveData() {
+            localStorage.setItem('iso27001_data', JSON.stringify(DATA));
+        }
+
+        function loadData() {
+            const stored = localStorage.getItem('iso27001_data');
+            if (stored) {
+                Object.assign(DATA, JSON.parse(stored));
+            }
+        }
+
+        // Tab Navigation
+        function showTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(tab).classList.remove('hidden');
+            
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active', 'text-blue-600', 'border-b-2', 'border-blue-600'));
+            event.target.classList.add('active', 'text-blue-600', 'border-b-2', 'border-blue-600');
+
+            renderAll();
+        }
+
+        // Render Functions
+        function renderAll() {
+            renderDashboard();
+            renderDocs();
+            renderControls();
+            renderAudits();
+            renderNCs();
+        }
+
+        function renderDashboard() {
+            const completedDocs = DATA.documents.filter(d => ['Aprobado', 'Implementado'].includes(d.status)).length;
+            const completedControls = DATA.controls.filter(c => ['Implementado', 'Verificado'].includes(c.status)).length;
+            const progress = Math.round(((completedDocs + completedControls) / (DATA.documents.length + DATA.controls.length)) * 100);
+            const openNCs = DATA.nonconformities.filter(nc => nc.status !== 'Cerrada').length;
+
+            document.getElementById('kpi-progress').textContent = progress + '%';
+            document.getElementById('kpi-progress-bar').style.width = progress + '%';
+            document.getElementById('kpi-docs').textContent = completedDocs;
+            document.getElementById('kpi-controls').textContent = completedControls;
+            document.getElementById('kpi-nc').textContent = openNCs;
+
+            // Category Chart
+            const categories = ['C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10'];
+            const catData = categories.map(cat => {
+                const docs = DATA.documents.filter(d => d.category.includes(cat.replace('C', 'Cláusula ')));
+                const completed = docs.filter(d => ['Aprobado', 'Implementado'].includes(d.status)).length;
+                return docs.length ? Math.round((completed / docs.length) * 100) : 0;
+            });
+
+            const ctx1 = document.getElementById('chartCategory');
+            if (ctx1.chart) ctx1.chart.destroy();
+            ctx1.chart = new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: categories,
+                    datasets: [{label: 'Progreso %', data: catData, backgroundColor: 'rgba(59, 130, 246, 0.8)'}]
+                },
+                options: {responsive: true, scales: {y: {beginAtZero: true, max: 100}}}
+            });
+
+            // Controls Chart
+            const statuses = ['No Implementado', 'En Implementación', 'Implementado', 'Verificado', 'No Aplicable'];
+            const statusData = statuses.map(s => DATA.controls.filter(c => c.status === s).length);
+
+            const ctx2 = document.getElementById('chartControls');
+            if (ctx2.chart) ctx2.chart.destroy();
+            ctx2.chart = new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: statuses,
+                    datasets: [{data: statusData, backgroundColor: ['#EF4444', '#FBBF24', '#22C55E', '#3B82F6', '#9CA3AF']}]
+                },
+                options: {responsive: true}
+            });
+
+            // Update control stats
+            ['Organizacional', 'Personas', 'Físico', 'Tecnológico'].forEach((cat, idx) => {
+                const controls = DATA.controls.filter(c => c.category === cat);
+                const implemented = controls.filter(c => ['Implementado', 'Verificado'].includes(c.status)).length;
+                const ids = ['stat-org', 'stat-people', 'stat-physical', 'stat-tech'];
+                document.getElementById(ids[idx]).textContent = `${implemented}/${controls.length}`;
+            });
+        }
+
+        function renderDocs() {
+            const catFilter = document.getElementById('filterDocCat')?.value || '';
+            const statusFilter = document.getElementById('filterDocStatus')?.value || '';
+            const searchFilter = (document.getElementById('filterDocSearch')?.value || '').toLowerCase();
+
+            const filtered = DATA.documents.filter(d => {
+                return (!catFilter || d.category === catFilter) &&
+                       (!statusFilter || d.status === statusFilter) &&
+                       (!searchFilter || d.name.toLowerCase().includes(searchFilter));
+            });
+
+            const tbody = document.getElementById('docsTable');
+            tbody.innerHTML = filtered.map(d => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4">
+                        <div class="font-medium">${d.name}</div>
+                        ${d.mandatory ? '<span class="text-xs text-red-600 font-semibold">* OBLIGATORIO</span>' : ''}
+                    </td>
+                    <td class="px-6 py-4 text-sm">${d.category}</td>
+                    <td class="px-6 py-4">
+                        <select onchange="updateDoc(${d.id}, 'status', this.value)" class="text-sm border rounded px-2 py-1 ${getStatusClass(d.status)}">
+                            <option value="Pendiente" ${d.status === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
+                            <option value="En Progreso" ${d.status === 'En Progreso' ? 'selected' : ''}>En Progreso</option>
+                            <option value="Revisión" ${d.status === 'Revisión' ? 'selected' : ''}>Revisión</option>
+                            <option value="Aprobado" ${d.status === 'Aprobado' ? 'selected' : ''}>Aprobado</option>
+                            <option value="Implementado" ${d.status === 'Implementado' ? 'selected' : ''}>Implementado</option>
+                        </select>
+                    </td>
+                    <td class="px-6 py-4">
+                        <input type="text" value="${d.responsible}" onchange="updateDoc(${d.id}, 'responsible', this.value)" 
+                               class="text-sm border rounded px-2 py-1 w-full" placeholder="Responsable">
+                    </td>
+                    <td class="px-6 py-4">
+                        <input type="date" value="${d.deadline}" onchange="updateDoc(${d.id}, 'deadline', this.value)" 
+                               class="text-sm border rounded px-2 py-1">
+                    </td>
+                    <td class="px-6 py-4">
+                        ${!d.mandatory ? `<button onclick="deleteDoc(${d.id})" class="text-red-600 hover:text-red-800">🗑️</button>` : ''}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderControls() {
+            const catFilter = document.getElementById('filterCtrlCat')?.value || '';
+            const statusFilter = document.getElementById('filterCtrlStatus')?.value || '';
+            const searchFilter = (document.getElementById('filterCtrlSearch')?.value || '').toLowerCase();
+
+            const filtered = DATA.controls.filter(c => {
+                return (!catFilter || c.category === catFilter) &&
+                       (!statusFilter || c.status === statusFilter) &&
+                       (!searchFilter || c.name.toLowerCase().includes(searchFilter) || c.id.toLowerCase().includes(searchFilter));
+            });
+
+            const container = document.getElementById('controlsList');
+            container.innerHTML = filtered.map(c => `
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-3">
+                                <span class="font-bold text-blue-600">${c.controlId}</span>
+                                <h3 class="font-semibold">${c.name}</h3>
+                            </div>
+                            <span class="inline-block mt-2 px-3 py-1 text-xs font-semibold rounded-full ${getCatBadge(c.category)}">${c.category}</span>
+                        </div>
+                        <select onchange="updateControl('${c.id}', 'status', this.value)" 
+                                class="text-sm border rounded px-3 py-2 font-semibold ${getControlStatusClass(c.status)}">
+                            <option value="No Implementado" ${c.status === 'No Implementado' ? 'selected' : ''}>No Implementado</option>
+                            <option value="En Implementación" ${c.status === 'En Implementación' ? 'selected' : ''}>En Implementación</option>
+                            <option value="Implementado" ${c.status === 'Implementado' ? 'selected' : ''}>Implementado</option>
+                            <option value="Verificado" ${c.status === 'Verificado' ? 'selected' : ''}>Verificado</option>
+                            <option value="No Aplicable" ${c.status === 'No Aplicable' ? 'selected' : ''}>No Aplicable</option>
+                        </select>
+                    </div>
+                    <div class="mt-4 grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-xs font-semibold text-gray-600">Justificación</label>
+                            <textarea onchange="updateControl('${c.id}', 'justification', this.value)" 
+                                      class="mt-1 w-full text-sm border rounded px-3 py-2" rows="2">${c.justification}</textarea>
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-gray-600">Evidencia</label>
+                            <textarea onchange="updateControl('${c.id}', 'evidence', this.value)" 
+                                      class="mt-1 w-full text-sm border rounded px-3 py-2" rows="2">${c.evidence}</textarea>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderAudits() {
+            // Timeline
+            const timeline = document.getElementById('auditTimeline');
+            const stages = [
+                {name: 'Gap Analysis', status: 'completed'},
+                {name: 'Implementación SGSI', status: 'in-progress'},
+                {name: 'Auditoría Interna', status: 'pending'},
+                {name: 'Stage 1', status: 'pending'},
+                {name: 'Stage 2', status: 'pending'},
+                {name: 'Certificación', status: 'pending'}
+            ];
+
+            timeline.innerHTML = stages.map(s => `
+                <div class="flex items-center space-x-4">
+                    <div class="w-4 h-4 rounded-full ${s.status === 'completed' ? 'bg-green-500' : s.status === 'in-progress' ? 'bg-yellow-500' : 'bg-gray-300'}"></div>
+                    <div class="flex-1 bg-gray-50 rounded p-3">
+                        <span class="font-semibold">${s.name}</span>
+                    </div>
+                </div>
+            `).join('');
+
+            // Table
+            const tbody = document.getElementById('auditsTable');
+            tbody.innerHTML = DATA.audits.map(a => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 font-medium">${a.type}</td>
+                    <td class="px-6 py-4 text-sm">${a.date}</td>
+                    <td class="px-6 py-4">
+                        <span class="px-3 py-1 text-xs font-semibold rounded-full ${getAuditStatusClass(a.status)}">${a.status}</span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <input type="text" value="${a.auditor}" onchange="updateAudit(${a.id}, 'auditor', this.value)" 
+                               class="text-sm border rounded px-2 py-1 w-full" placeholder="Auditor">
+                    </td>
+                    <td class="px-6 py-4 font-semibold ${a.findings > 0 ? 'text-red-600' : 'text-green-600'}">${a.findings}</td>
+                    <td class="px-6 py-4">
+                        <button onclick="alert('Detalles de auditoría')" class="text-blue-600 hover:text-blue-800">Ver</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderNCs() {
+            const major = DATA.nonconformities.filter(nc => nc.type === 'Mayor').length;
+            const minor = DATA.nonconformities.filter(nc => nc.type === 'Menor').length;
+            const improve = DATA.nonconformities.filter(nc => nc.type === 'Mejora').length;
+
+            document.getElementById('stat-nc-major').textContent = major;
+            document.getElementById('stat-nc-minor').textContent = minor;
+            document.getElementById('stat-nc-improve').textContent = improve;
+
+            const tbody = document.getElementById('ncTable');
+            if (DATA.nonconformities.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-8 text-center text-gray-500">No hay no conformidades registradas</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = DATA.nonconformities.map(nc => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 font-mono text-sm">${nc.id}</td>
+                    <td class="px-6 py-4">
+                        <span class="px-3 py-1 text-xs font-semibold rounded-full ${getNCTypeClass(nc.type)}">${nc.type}</span>
+                    </td>
+                    <td class="px-6 py-4 text-sm">${nc.description}</td>
+                    <td class="px-6 py-4 text-sm">${nc.control}</td>
+                    <td class="px-6 py-4">
+                        <select onchange="updateNC('${nc.id}', 'status', this.value)" 
+                                class="text-sm border rounded px-2 py-1 ${getNCStatusClass(nc.status)}">
+                            <option value="Abierta" ${nc.status === 'Abierta' ? 'selected' : ''}>Abierta</option>
+                            <option value="En Tratamiento" ${nc.status === 'En Tratamiento' ? 'selected' : ''}>En Tratamiento</option>
+                            <option value="En Verificación" ${nc.status === 'En Verificación' ? 'selected' : ''}>En Verificación</option>
+                            <option value="Cerrada" ${nc.status === 'Cerrada' ? 'selected' : ''}>Cerrada</option>
+                        </select>
+                    </td>
+                    <td class="px-6 py-4 text-sm">${nc.deadline}</td>
+                    <td class="px-6 py-4">
+                        <button onclick="deleteNC('${nc.id}')" class="text-red-600 hover:text-red-800">🗑️</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Helper Functions
+        function getStatusClass(status) {
+            const classes = {
+                'Pendiente': 'bg-red-100 text-red-800',
+                'En Progreso': 'bg-yellow-100 text-yellow-800',
+                'Revisión': 'bg-blue-100 text-blue-800',
+                'Aprobado': 'bg-green-100 text-green-800',
+                'Implementado': 'bg-green-200 text-green-900'
+            };
+            return classes[status] || 'bg-gray-100';
+        }
+
+        function getControlStatusClass(status) {
+            const classes = {
+                'No Implementado': 'bg-red-100 text-red-800',
+                'En Implementación': 'bg-yellow-100 text-yellow-800',
+                'Implementado': 'bg-green-100 text-green-800',
+                'Verificado': 'bg-blue-100 text-blue-800',
+                'No Aplicable': 'bg-gray-100 text-gray-600'
+            };
+            return classes[status] || 'bg-gray-100';
+        }
+
+        function getCatBadge(cat) {
+            const badges = {
+                'Organizacional': 'bg-blue-100 text-blue-800',
+                'Personas': 'bg-green-100 text-green-800',
+                'Físico': 'bg-purple-100 text-purple-800',
+                'Tecnológico': 'bg-orange-100 text-orange-800'
+            };
+            return badges[cat] || 'bg-gray-100';
+        }
+
+        function getAuditStatusClass(status) {
+            const classes = {
+                'Pendiente': 'bg-gray-100 text-gray-800',
+                'Programada': 'bg-blue-100 text-blue-800',
+                'En Curso': 'bg-yellow-100 text-yellow-800',
+                'Completada': 'bg-green-100 text-green-800'
+            };
+            return classes[status] || 'bg-gray-100';
+        }
+
+        function getNCTypeClass(type) {
+            const classes = {
+                'Mayor': 'bg-red-100 text-red-800',
+                'Menor': 'bg-yellow-100 text-yellow-800',
+                'Mejora': 'bg-blue-100 text-blue-800'
+            };
+            return classes[type] || 'bg-gray-100';
+        }
+
+        function getNCStatusClass(status) {
+            const classes = {
+                'Abierta': 'bg-red-100 text-red-800',
+                'En Tratamiento': 'bg-yellow-100 text-yellow-800',
+                'En Verificación': 'bg-blue-100 text-blue-800',
+                'Cerrada': 'bg-green-100 text-green-800'
+            };
+            return classes[status] || 'bg-gray-100';
+        }
+
+        // Update Functions
+        function updateDoc(id, field, value) {
+            const doc = DATA.documents.find(d => d.id === id);
+            if (doc) {
+                doc[field] = value;
+                saveData();
+                renderAll();
+            }
+        }
+
+        function updateControl(id, field, value) {
+            const ctrl = DATA.controls.find(c => c.id === id);
+            if (ctrl) {
+                ctrl[field] = value;
+                saveData();
+                renderAll();
+            }
+        }
+
+        function updateAudit(id, field, value) {
+            const audit = DATA.audits.find(a => a.id === id);
+            if (audit) {
+                audit[field] = value;
+                saveData();
+            }
+        }
+
+        function updateNC(id, field, value) {
+            const nc = DATA.nonconformities.find(n => n.id === id);
+            if (nc) {
+                nc[field] = value;
+                saveData();
+                renderAll();
+            }
+        }
+
+        // Add Functions
+        function addDoc() {
+            const name = prompt('Nombre del documento:');
+            if (name) {
+                DATA.documents.push({
+                    id: Math.max(...DATA.documents.map(d => d.id), 0) + 1,
+                    name: name,
+                    category: 'Cláusula 8',
+                    subcategory: 'Personalizado',
+                    status: 'Pendiente',
+                    responsible: '',
+                    deadline: '',
+                    mandatory: false
+                });
+                saveData();
+                renderAll();
+            }
+        }
+
+        function addAudit() {
+            const type = prompt('Tipo de auditoría:');
+            if (type) {
+                DATA.audits.push({
+                    id: Math.max(...DATA.audits.map(a => a.id), 0) + 1,
+                    type: type,
+                    date: '',
+                    status: 'Pendiente',
+                    auditor: '',
+                    findings: 0
+                });
+                saveData();
+                renderAll();
+            }
+        }
+
+        function addNC() {
+            const description = prompt('Descripción de la no conformidad:');
+            if (description) {
+                DATA.nonconformities.push({
+                    id: 'NC-' + String(DATA.nonconformities.length + 1).padStart(4, '0'),
+                    type: 'Menor',
+                    description: description,
+                    control: '',
+                    status: 'Abierta',
+                    deadline: ''
+                });
+                saveData();
+                renderAll();
+            }
+        }
+
+        // Delete Functions
+        function deleteDoc(id) {
+            if (confirm('¿Eliminar documento?')) {
+                DATA.documents = DATA.documents.filter(d => d.id !== id);
+                saveData();
+                renderAll();
+            }
+        }
+
+        function deleteNC(id) {
+            if (confirm('¿Eliminar no conformidad?')) {
+                DATA.nonconformities = DATA.nonconformities.filter(nc => nc.id !== id);
+                saveData();
+                renderAll();
+            }
+        }
+
+        // CSS for active tab
+        const style = document.createElement('style');
+        style.textContent = `
+            .tab-btn { color: #6B7280; transition: all 0.2s; }
+            .tab-btn:hover { color: #3B82F6; background: #F9FAFB; }
+            .tab-btn.active { color: #3B82F6; border-bottom: 2px solid #3B82F6; }
+        `;
+        document.head.appendChild(style);
+
+        // Initialize on load
+        init();
+    </script>
+</body>
+</html>
